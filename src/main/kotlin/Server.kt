@@ -57,14 +57,15 @@ private suspend fun getItem(id: String) {
         parameter("id", id)
     }
 
-    if (responseItem.data?.diff != null && responseItem.data.diff <= -10) {
+    if (responseItem.data?.diff != null && responseItem.data.diff <= 0) {
         if (responseItem.data.title == null) return
         if (responseItem.data.photo == null) return
 
         val arrayText = arrayListOf<String>()
         responseItem.data.title.let { arrayText.add(it) }
-        responseItem.data.price?.let { arrayText.add(it) }
-        responseItem.data.diff.let { arrayText.add(it.toString()) }
+        responseItem.data.probeg?.let { arrayText.add("Пробег: $it") }
+        responseItem.data.getPriceStr().let { arrayText.add(it) }
+        responseItem.data.diff.let { arrayText.add("$it%") }
         arrayText.add("https://kolesa.kz/a/show/$id")
 
         bot.sendPhoto(ChatId.fromId(CHAT_ID), photo = responseItem.data.photo, caption = arrayText.joinToString(separator = "\n"))
