@@ -8,7 +8,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 
-val TEST = "UqgqcWh6kN4BXG8H7rTS9LOvMNZE1Cap5"
 val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
 val CHAT_ID = 266637514L
 val carsList = arrayListOf<CarItemModel>()
@@ -43,8 +42,8 @@ private suspend fun getLIst() {
 
     if (!responseList.data.isNullOrEmpty()) {
         responseList.data.forEach {
-            if (it.id.isNullOrEmpty()) return                                           // null id return
-            if (carsList.find { oldCar -> oldCar.id == it.id } != null) return          // old car return
+            if (it.id.isNullOrEmpty()) return@forEach                                           // null id return
+            if (carsList.find { oldCar -> oldCar.id == it.id } != null) return@forEach          // old car return
             getItem(it.id)
         }
         carsList.clear()
@@ -58,7 +57,7 @@ private suspend fun getItem(id: String) {
         parameter("id", id)
     }
 
-    if (responseItem.data?.diff != null && responseItem.data.diff <= 0) {
+    if (responseItem.data?.diff != null && responseItem.data.diff <= -10) {
         if (responseItem.data.title == null) return
         if (responseItem.data.photo == null) return
 
