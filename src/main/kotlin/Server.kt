@@ -57,7 +57,7 @@ private suspend fun getItem(id: String) {
         parameter("id", id)
     }
 
-    if (responseItem.data?.diff != null && responseItem.data.diff <= 0) {
+    if (responseItem.data?.diff != null && responseItem.data.diff <= -10) {
         if (responseItem.data.title == null) return
         if (responseItem.data.photo == null) return
 
