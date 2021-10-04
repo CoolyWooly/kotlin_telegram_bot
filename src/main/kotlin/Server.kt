@@ -7,10 +7,12 @@ import io.ktor.client.features.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 
 val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
 val CHAT_ID = 266637514L
-val carsList = arrayListOf<CarItemModel>()
+val oldCarsList = arrayListOf<CarItemModel>()
 val client = HttpClient(CIO) {
     install(JsonFeature) {
         serializer = GsonSerializer()
@@ -25,14 +27,17 @@ val bot = bot {
     token = "1970497958:AAEc6C8NdaHBJoAWtWtyma5eke7YU33tqno"
 }
 
+@ExperimentalTime
 fun main() = runBlocking {
     while (isActive) {
         getLIst()
-        delay(10 * 60 * 1000) // 10 min
+        delay(Duration.minutes(2))
     }
 }
 
 private suspend fun getLIst() {
+    bot.sendMessage(ChatId.fromId(CHAT_ID), text = "Поиск авто...")
+
     val responseList: KolesaResponse<List<CarItemModel>> =
         client.get("https://wrapapi.com/use/CoolyWooly/kolesa/list/latest") {
             parameter("wrapAPIKey", WRAP_API_KEY)
@@ -41,23 +46,23 @@ private suspend fun getLIst() {
         }
 
     if (!responseList.data.isNullOrEmpty()) {
-        responseList.data.forEach {
-            if (it.id.isNullOrEmpty()) return@forEach                                           // null id return
-            if (carsList.find { oldCar -> oldCar.id == it.id } != null) return@forEach          // old car return
-            getItem(it.id)
+        responseList.data.forEach { newCar ->
+            if (oldCarsList.find { oldCar -> oldCar.id == newCar.id } != null) return@forEach          // old car return
+            getItem(newCar.id)
         }
-        carsList.clear()
-        carsList.addAll(responseList.data)
+        oldCarsList.clear()
+        oldCarsList.addAll(responseList.data)
     }
 }
 
 private suspend fun getItem(id: String) {
-    val responseItem: KolesaResponse<CarModel> = client.get("https://wrapapi.com/use/CoolyWooly/kolesa/item/latest") {
-        parameter("wrapAPIKey", WRAP_API_KEY)
-        parameter("id", id)
-    }
+    val responseItem: KolesaResponse<CarModel> =
+        client.get("https://wrapapi.com/use/CoolyWooly/kolesa/item/latest") {
+            parameter("wrapAPIKey", WRAP_API_KEY)
+            parameter("id", id)
+        }
 
-    if (responseItem.data?.diff != null && responseItem.data.diff <= -10) {
+    if (responseItem.data?.diff != null && responseItem.data.diff <= 0) {
         if (responseItem.data.title == null) return
         if (responseItem.data.photo == null) return
 
@@ -68,6 +73,10 @@ private suspend fun getItem(id: String) {
         responseItem.data.diff.let { arrayText.add("$it%") }
         arrayText.add("https://kolesa.kz/a/show/$id")
 
-        bot.sendPhoto(ChatId.fromId(CHAT_ID), photo = responseItem.data.photo, caption = arrayText.joinToString(separator = "\n"))
+        bot.sendPhoto(
+            ChatId.fromId(CHAT_ID),
+            photo = responseItem.data.photo,
+            caption = arrayText.joinToString(separator = "\n")
+        )
     }
 }
