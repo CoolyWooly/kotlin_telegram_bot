@@ -31,7 +31,7 @@ val bot = bot {
 fun main() = runBlocking {
     while (isActive) {
         getLIst()
-        delay(Duration.minutes(2))
+        delay(Duration.minutes(10))
     }
 }
 
