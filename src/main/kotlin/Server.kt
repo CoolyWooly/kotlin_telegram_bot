@@ -11,9 +11,9 @@ import kotlinx.coroutines.*
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
-val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
-val CHAT_ID = 266637514L
-var oldMessageSearchAvto: Message? = null
+const val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
+const val CHAT_ID = 266637514L
+var oldMessageSearchAuto: Message? = null
 val oldCarsList = arrayListOf<CarItemModel>()
 val client = HttpClient(CIO) {
     install(JsonFeature) {
@@ -38,9 +38,9 @@ fun main() = runBlocking {
 }
 
 private suspend fun getLIst() {
-    oldMessageSearchAvto?.let { bot.deleteMessage(ChatId.fromId(CHAT_ID), messageId = it.messageId) }
+    oldMessageSearchAuto?.let { bot.deleteMessage(ChatId.fromId(CHAT_ID), messageId = it.messageId) }
     val result = bot.sendMessage(ChatId.fromId(CHAT_ID), text = "Поиск авто...")
-    oldMessageSearchAvto = result.first?.body()?.result
+    oldMessageSearchAuto = result.first?.body()?.result
 
     val responseList: KolesaResponse<List<CarItemModel>> =
         client.get("https://wrapapi.com/use/CoolyWooly/kolesa/list/latest") {
