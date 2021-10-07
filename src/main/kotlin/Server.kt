@@ -12,7 +12,7 @@ import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
 const val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
-const val CHAT_ID = 266637514L
+const val CHAT_ID = -1001436932404L
 var oldMessageSearchAuto: Message? = null
 val oldCarsList = arrayListOf<CarItemModel>()
 val client = HttpClient(CIO) {
