@@ -70,7 +70,7 @@ private suspend fun getItem(id: String) {
     val priceResponse: PriceResponse =
         client.get("https://kolesa.kz/a/average-price/$id/")
 
-    if (priceResponse.data?.diffInPercents != null && priceResponse.data.diffInPercents < 5) {
+    if (priceResponse.data?.diffInPercents != null && priceResponse.data.diffInPercents < -5) {
         if (responseItem.data?.title == null) return
         if (responseItem.data.photo == null) return
 
