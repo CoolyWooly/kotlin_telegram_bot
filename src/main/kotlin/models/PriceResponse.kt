@@ -1,3 +1,5 @@
+package models
+
 data class PriceResponse(
     val data: PriceModel?,
 ) {

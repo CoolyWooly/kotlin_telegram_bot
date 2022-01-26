@@ -1,89 +1,82 @@
-import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.entities.ChatId
-import com.github.kotlintelegrambot.entities.Message
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.features.json.*
-import io.ktor.client.features.logging.*
+import com.google.gson.Gson
+import consts.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
+import models.ItemResponse
+import models.ListResponse
+import models.PriceResponse
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-
-const val WRAP_API_KEY = "UqgqcWh6kN4BXG8H7rTS9LOvMNZECap5"
-const val CHAT_ID = -1001436932404L
-var oldMessageSearchAuto: Message? = null
-val oldCarsList = arrayListOf<CarItemModel>()
-val client = HttpClient(CIO) {
-    install(JsonFeature) {
-        serializer = GsonSerializer()
-        acceptContentTypes = acceptContentTypes + ContentType("application", "json+hal")
-    }
-    install(Logging) {
-        logger = Logger.DEFAULT
-        level = LogLevel.BODY
-    }
-}
-val bot = bot {
-    token = "1970497958:AAEc6C8NdaHBJoAWtWtyma5eke7YU33tqno"
-}
 
 @ExperimentalTime
 fun main() = runBlocking {
     while (isActive) {
-        getLIst()
+        getList()
         delay(Duration.minutes(10))
     }
 }
 
-private suspend fun getLIst() {
-    oldMessageSearchAuto?.let { bot.deleteMessage(ChatId.fromId(CHAT_ID), messageId = it.messageId) }
+private suspend fun getList() {
+    val strOld = fileOldMessage.readText()
+    // Удаляем Поиск авто...
+    if (strOld.isNotEmpty()) {
+        bot.deleteMessage(ChatId.fromId(CHAT_ID), messageId = strOld.toLong())
+    }
+    // Отправляем Поиск авто...
     val result = bot.sendMessage(ChatId.fromId(CHAT_ID), text = "Поиск авто...")
-    oldMessageSearchAuto = result.first?.body()?.result
+    fileOldMessage.writeText(result.first?.body()?.result?.messageId.toString())
 
-    val responseList: KolesaResponse<List<CarItemModel>> =
+    val list: ListResponse =
         client.get("https://wrapapi.com/use/CoolyWooly/kolesa/list/latest") {
             parameter("wrapAPIKey", WRAP_API_KEY)
             parameter("page", 1)
             parameter("city", "nur-sultan")
         }
 
-    if (!responseList.data.isNullOrEmpty()) {
-        responseList.data.forEach { newCar ->
-            if (oldCarsList.find { oldCar -> oldCar.id == newCar.id } != null) return@forEach          // old car return
-            getItem(newCar.id)
+    if (!list.data.isNullOrEmpty()) {
+        val oldCarList = fileData.readLines()
+        list.data.forEach { newCar ->
+            if (oldCarList.contains(newCar.id)) return@forEach
+            getItem(id = newCar.id, diff = list.diff)
         }
-        oldCarsList.clear()
-        oldCarsList.addAll(responseList.data)
+        list.data.forEachIndexed { index, model ->
+            if (index == 0) {
+                fileData.writeText(model.id)
+            } else {
+                fileData.appendText("\n")
+                fileData.appendText(model.id)
+            }
+        }
     }
 }
 
-private suspend fun getItem(id: String) {
-    val responseItem: KolesaResponse<CarModel> =
+private suspend fun getItem(id: String, diff: Int) {
+    val item: ItemResponse =
         client.get("https://wrapapi.com/use/CoolyWooly/kolesa/item/latest") {
             parameter("wrapAPIKey", WRAP_API_KEY)
             parameter("id", id)
         }
 
+    val price: PriceResponse =
+        client.get("https://kolesa.kz/a/average-price/$id")
 
-    val priceResponse: PriceResponse =
-        client.get("https://kolesa.kz/a/average-price/$id/")
-
-    if (priceResponse.data?.diffInPercents != null && priceResponse.data.diffInPercents < -5) {
-        if (responseItem.data?.title == null) return
-        if (responseItem.data.photo == null) return
+    if (price.data?.diffInPercents != null && price.data.diffInPercents < diff) {
+        if (item.data?.title == null) return
+        if (item.data.photo == null) return
 
         val arrayText = arrayListOf<String>()
-        responseItem.data.title.let { arrayText.add(it) }
-        responseItem.data.probeg?.let { arrayText.add("Пробег: $it") }
-        responseItem.data.getPriceStr().let { arrayText.add(it) }
-        priceResponse.data.diffInPercents.let { arrayText.add("$it%") }
+        item.data.title.let { arrayText.add(it) }
+        item.data.probeg?.let { arrayText.add("Пробег: $it") }
+        item.data.getPriceStr().let { arrayText.add(it) }
+        price.data.diffInPercents.let { arrayText.add("$it%") }
         arrayText.add("https://kolesa.kz/a/show/$id")
 
         bot.sendPhoto(
             ChatId.fromId(CHAT_ID),
-            photo = responseItem.data.photo,
+            photo = item.data.photo,
             caption = arrayText.joinToString(separator = "\n")
         )
     }

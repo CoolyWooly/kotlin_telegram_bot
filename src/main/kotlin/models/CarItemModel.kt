@@ -1,3 +1,5 @@
+package models
+
 data class CarItemModel(
     val id: String,
     val title: String?,
